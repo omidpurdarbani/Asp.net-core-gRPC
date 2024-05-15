@@ -1,8 +1,9 @@
-﻿using MessageDispatcher.Services;
+﻿using Message.Splitter.Services;
+using MessageProcessor.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-namespace MessageDispatcher
+namespace Message.Splitter
 {
     class Program
     {
@@ -12,6 +13,7 @@ namespace MessageDispatcher
                 .ConfigureServices((context, services) =>
                 {
                     services.AddHostedService<Worker>();
+                    services.AddSingleton<GrpcMessageService>();
                     services.AddSingleton<MessageService>();
                 })
                 .Build();

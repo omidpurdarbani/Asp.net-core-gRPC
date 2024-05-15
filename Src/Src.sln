@@ -9,15 +9,16 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Test", "Test", "{FCEB5211-9
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MessagingTests", "Test\MessagingTests\MessagingTests.csproj", "{A7B36E57-D5AE-4B89-AD4E-2C286F5E81DC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Message.Splitter", "App\Message.Splitter\Message.Splitter.csproj", "{D9F0D729-D714-4C8B-8372-BA8CB781B22A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Message.Splitter", "App\Message.Splitter\Message.Splitter.csproj", "{D9F0D729-D714-4C8B-8372-BA8CB781B22A}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Message.Management", "App\Message.Management\Message.Management.csproj", "{9CE09087-9DEF-422C-8178-70D91DBEC6EA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Message.Processor", "App\Message.Processor\Message.Processor.csproj", "{8449134C-4B11-493B-8D6E-99D7DD6F0582}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Message.Processor", "App\Message.Processor\Message.Processor.csproj", "{8449134C-4B11-493B-8D6E-99D7DD6F0582}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Proto", "Proto", "{A574BE4F-083A-467B-A567-15E8F9D24FB5}"
 	ProjectSection(SolutionItems) = preProject
 		App\Proto\message.proto = App\Proto\message.proto
+		App\Proto\process.proto = App\Proto\process.proto
 	EndProjectSection
 EndProject
 Global

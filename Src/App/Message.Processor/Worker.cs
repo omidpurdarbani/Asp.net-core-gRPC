@@ -5,15 +5,17 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace MessageProcessor.Services
+namespace Message.Processor.Services
 {
     public class Worker : BackgroundService
     {
+        private readonly ProcessingService _processingService;
         private readonly IWebHost _host;
         private readonly ILogger<Worker> _logger;
 
-        public Worker(ProcessingService processingService, ILogger<Worker> logger)
+        public Worker(ProcessingService processingService, GrpcProcessingService grpcProcessingService, ILogger<Worker> logger)
         {
+            _processingService = processingService;
             _logger = logger;
 
             _host = new WebHostBuilder()
@@ -25,13 +27,14 @@ namespace MessageProcessor.Services
                 {
                     services.AddGrpc();
                     services.AddSingleton(processingService);
+                    services.AddSingleton(grpcProcessingService);
                 })
                 .Configure(app =>
                 {
                     app.UseRouting();
                     app.UseEndpoints(endpoints =>
                     {
-                        endpoints.MapGrpcService<ProcessingService>();
+                        endpoints.MapGrpcService<GrpcProcessingService>();
                     });
                 })
                 .Build();
@@ -39,8 +42,12 @@ namespace MessageProcessor.Services
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("Message processor started.");
-            await _host.RunAsync(stoppingToken);
+            _logger.LogInformation("Message processor started...");
+            await Task.Run(() =>
+            {
+                _host.RunAsync(stoppingToken);
+                _ = _processingService.StartTask();
+            }, stoppingToken);
         }
     }
 }

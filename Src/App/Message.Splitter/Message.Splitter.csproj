@@ -11,6 +11,7 @@
 		<PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.0" />
 		<PackageReference Include="Grpc.Net.Client" Version="2.62.0" />
+		<PackageReference Include="Grpc.AspNetCore" Version="2.62.0" />
 		<PackageReference Include="Google.Protobuf" Version="3.26.1" />
 		<PackageReference Include="Grpc.Tools" Version="2.63.0">
 			<PrivateAssets>all</PrivateAssets>
@@ -19,7 +20,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Protobuf Include="..\Proto\message.proto" GrpcServices="Client" />
+		<Protobuf Include="..\Proto\process.proto" GrpcServices="Client" />
+		<Protobuf Include="..\Proto\message.proto" GrpcServices="Server" />
 	</ItemGroup>
 
 </Project>

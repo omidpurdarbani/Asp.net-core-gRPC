@@ -1,24 +1,50 @@
-﻿using Microsoft.Extensions.Hosting;
+﻿using MessageProcessor.Services;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace MessageDispatcher.Services
+namespace Message.Splitter.Services
 {
     public class Worker : BackgroundService
     {
         private readonly MessageService _messageService;
         private readonly ILogger<Worker> _logger;
+        private readonly IWebHost _host;
 
-        public Worker(MessageService messageService, ILogger<Worker> logger)
+
+        public Worker(GrpcMessageService grpcMessageService, MessageService messageService, ILogger<Worker> logger)
         {
             _messageService = messageService;
             _logger = logger;
+            _host = new WebHostBuilder()
+                .UseKestrel(options =>
+                {
+                    options.ListenLocalhost(6001, o => o.Protocols = HttpProtocols.Http2);
+                })
+                .ConfigureServices(services =>
+                {
+                    services.AddGrpc();
+                    services.AddSingleton(grpcMessageService);
+                    services.AddSingleton(messageService);
+                })
+                .Configure(app =>
+                {
+                    app.UseRouting();
+                    app.UseEndpoints(endpoints =>
+                    {
+                        endpoints.MapGrpcService<GrpcMessageService>();
+                    });
+                })
+                .Build();
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             _logger.LogInformation("Message Splitter started.");
-            await _messageService.StartProcessingMessages();
-
+            await _host.RunAsync(stoppingToken);
         }
     }
 }

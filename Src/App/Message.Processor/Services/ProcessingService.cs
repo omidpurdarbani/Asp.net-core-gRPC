@@ -1,33 +1,36 @@
-﻿using System.Text.RegularExpressions;
-using Grpc.Core;
+﻿using Grpc.Net.Client;
 using GrpcMessage;
+using Microsoft.Extensions.Logging;
 
-namespace MessageProcessor.Services
+namespace Message.Processor.Services
 {
-    public class ProcessingService : GrpcMessage.MessageProcessor.MessageProcessorBase
+    public class ProcessingService
     {
-        public override Task<MessageResponse> ProcessMessage(MessageRequest request, ServerCallContext context)
+        private readonly ILogger<ProcessingService> _logger;
+        private readonly MessageSplitter.MessageSplitterClient _client;
+
+        public ProcessingService(ILogger<ProcessingService> logger)
         {
-            var message = request.Message;
-            var messageLength = message.Length;
-            var isValid = true; // Placeholder for actual validation logic
+            _logger = logger;
+            var channel = GrpcChannel.ForAddress("http://localhost:6001");
+            _client = new MessageSplitter.MessageSplitterClient(channel);
+        }
 
-            var additionalFields = new Dictionary<string, bool>
+        public async Task StartTask()
+        {
+            while (true)
             {
-                { "HasNumbers", Regex.IsMatch(message, @"\d") },
-                { "HasLetters", Regex.IsMatch(message, @"[a-zA-Z]") }
-            };
+                await Task.Delay(2000);
+                var request = new MessageRequest()
+                {
+                    Id = "",
+                    Type = ""
+                };
 
-            var response = new MessageResponse
-            {
-                Id = request.Id,
-                Engine = "RegexEngine",
-                MessageLength = messageLength,
-                IsValid = isValid,
-                AdditionalFields = { additionalFields }
-            };
+                _logger.LogInformation($"Message Processor: requesting new message for id: {request.Id}");
 
-            return Task.FromResult(response);
+                await _client.RequestMessageAsync(request);
+            }
         }
     }
 }

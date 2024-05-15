@@ -1,8 +1,8 @@
-﻿using MessageProcessor.Services;
+﻿using Message.Processor.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-namespace MessageProcessor
+namespace Message.Processor
 {
     class Program
     {
@@ -12,6 +12,7 @@ namespace MessageProcessor
                 .ConfigureServices((context, services) =>
                 {
                     services.AddHostedService<Worker>();
+                    services.AddSingleton<GrpcProcessingService>();
                     services.AddSingleton<ProcessingService>();
                 })
                 .Build();

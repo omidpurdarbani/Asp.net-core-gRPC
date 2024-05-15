@@ -2,20 +2,16 @@ syntax = "proto3";
 
 option csharp_namespace = "GrpcMessage";
 
+
 message MessageRequest {
 	string id = 1;
-	string sender = 2;
-	string message = 3;
+	string type = 2;
 }
 
 message MessageResponse {
-	string id = 1;
-	string engine = 2;
-	int32 messageLength = 3;
-	bool isValid = 4;
-	map<string, bool> additionalFields = 5;
 }
 
-service MessageProcessor {
-	rpc ProcessMessage (MessageRequest) returns (MessageResponse);
+
+service MessageSplitter {
+	rpc RequestMessage (MessageRequest) returns (MessageResponse);
 }
