@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -12,11 +13,13 @@ namespace Message.Processor.Services
         private readonly ProcessingService _processingService;
         private readonly IWebHost _host;
         private readonly ILogger<Worker> _logger;
+        private readonly IConfiguration _configuration;
 
-        public Worker(ProcessingService processingService, GrpcProcessingService grpcProcessingService, ILogger<Worker> logger)
+        public Worker(IConfiguration configuration, ProcessingService processingService, GrpcProcessingService grpcProcessingService, ILogger<Worker> logger)
         {
             _processingService = processingService;
             _logger = logger;
+            _configuration = configuration;
 
             _host = new WebHostBuilder()
                 .UseKestrel(options =>
@@ -42,12 +45,19 @@ namespace Message.Processor.Services
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("Message processor started...");
-            await Task.Run(() =>
+            _logger.LogInformation("Message Processor started...");
+
+
+            var listOfTasks = new List<Task>();
+            var numberOfInstances = int.Parse(_configuration["NumberOfInstances"] ?? "0");
+            for (int i = 0; i < numberOfInstances; i++)
             {
-                _host.RunAsync(stoppingToken);
-                _ = _processingService.StartTask();
-            }, stoppingToken);
+                listOfTasks.Add(Task.Run(() => _processingService.StartTask(Guid.NewGuid().ToString()), stoppingToken));
+            }
+
+            listOfTasks.Add(Task.Run(() => _host.RunAsync(stoppingToken), stoppingToken));
+
+            await Task.WhenAll(listOfTasks).ConfigureAwait(false);
         }
     }
 }
