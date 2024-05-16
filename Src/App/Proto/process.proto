@@ -17,5 +17,5 @@ message ProcessResponse {
 }
 
 service MessageProcessor {
-	rpc ProcessMessage (MessageQueueResponse) returns (ProcessResponse);
+	rpc ProcessMessage (stream MessageQueueResponse) returns (stream ProcessResponse);
 }

@@ -45,11 +45,11 @@ namespace Message.Processor.Services
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("Message Processor started...");
-
+            _logger.LogWarning("Message Processor has started...");
 
             var listOfTasks = new List<Task>();
-            var numberOfInstances = int.Parse(_configuration["NumberOfInstances"] ?? "0");
+            //var numberOfInstances = int.Parse(_configuration["NumberOfInstances"] ?? "0");
+            var numberOfInstances = 1;
             for (int i = 0; i < numberOfInstances; i++)
             {
                 listOfTasks.Add(Task.Run(() => _processingService.StartTask(Guid.NewGuid().ToString()), stoppingToken));

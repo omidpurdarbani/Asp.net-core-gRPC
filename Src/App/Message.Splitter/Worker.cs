@@ -1,5 +1,4 @@
-﻿using MessageProcessor.Services;
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,14 +9,11 @@ namespace Message.Splitter.Services
 {
     public class Worker : BackgroundService
     {
-        private readonly MessageService _messageService;
         private readonly ILogger<Worker> _logger;
         private readonly IWebHost _host;
 
-
         public Worker(GrpcMessageService grpcMessageService, MessageService messageService, ILogger<Worker> logger)
         {
-            _messageService = messageService;
             _logger = logger;
             _host = new WebHostBuilder()
                 .UseKestrel(options =>
@@ -43,7 +39,7 @@ namespace Message.Splitter.Services
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("Message Splitter started.");
+            _logger.LogWarning("Message Splitter has started...");
             await _host.RunAsync(stoppingToken);
         }
     }

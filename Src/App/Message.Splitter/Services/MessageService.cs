@@ -10,22 +10,55 @@ namespace Message.Splitter.Services
     {
         private readonly ILogger<MessageService> _logger;
         private readonly Random _random;
-        private readonly GrpcMessage.MessageProcessor.MessageProcessorClient _client;
+        private readonly MessageProcessor.MessageProcessorClient _client;
 
         public MessageService(ILogger<MessageService> logger)
         {
             _logger = logger;
             _random = new Random();
             var channel = GrpcChannel.ForAddress("http://localhost:5001");
-            _client = new GrpcMessage.MessageProcessor.MessageProcessorClient(channel);
+            _client = new MessageProcessor.MessageProcessorClient(channel);
         }
 
-        public async Task StartTask()
+        public async Task<ProcessResponse> StartTask()
         {
+            var call = _client.ProcessMessage();
+            var requestStream = call.RequestStream;
+            var responseStream = call.ResponseStream;
+
+            // Create a TaskCompletionSource to await the response
+            var responseReceived = new TaskCompletionSource<ProcessResponse>();
+
             try
             {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await foreach (var response in responseStream.ReadAllAsync())
+                        {
+                            _logger.LogInformation($"Message Splitter: Processed message: MessageLength: {response.MessageLength}, IsValid: {response.IsValid}");
+
+                            // Set the TaskCompletionSource result when response is received
+                            responseReceived.SetResult(response);
+                        }
+                    }
+                    catch (RpcException ex)
+                    {
+                        _logger.LogError($"RPC Error: {ex.Status}, {ex.Message}");
+                        // Set the TaskCompletionSource exception if an error occurs
+                        responseReceived.SetException(ex);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError($"Error processing message: {ex.Message}");
+                        // Set the TaskCompletionSource exception if an error occurs
+                        responseReceived.SetException(ex);
+                    }
+                });
+
                 var message = await GenerateRandomMessage();
-                _logger.LogInformation($"Message Splitter: Message received: {message}");
+                _logger.LogInformation($"Message Splitter: Sending message to process: {message.Message}");
 
                 var request = new MessageQueueResponse
                 {
@@ -34,28 +67,33 @@ namespace Message.Splitter.Services
                     Message = message.Message
                 };
 
-                var response = await _client.ProcessMessageAsync(request);
-                _logger.LogInformation($"Message Splitter: Processed message: {response}");
+                await requestStream.WriteAsync(request);
+                await requestStream.CompleteAsync();
+
+                // Wait for the response
+                return await responseReceived.Task;
             }
             catch (RpcException ex)
             {
                 _logger.LogError($"RPC Error: {ex.Status}, {ex.Message}");
+                throw; // Rethrow the exception
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error processing message: {ex.Message}");
+                _logger.LogError($"Error sending message: {ex.Message}");
+                throw; // Rethrow the exception
+            }
+            finally
+            {
+                // Ensure proper cleanup of resources
+                await requestStream.CompleteAsync();
             }
         }
 
-        private async Task<MessageQueueResponse> GenerateRandomMessage()
+        private async Task<(string Id, string Sender, string Message)> GenerateRandomMessage()
         {
             await Task.Delay(200);
-            return new MessageQueueResponse()
-            {
-                Id = _random.Next(1000).ToString(),
-                Sender = "Legal",
-                Message = LoremIpsum(10 + _random.Next(30), 41 + _random.Next(30), 1, 1, 1)
-            };
+            return (Guid.NewGuid().ToString(), "Legal", LoremIpsum(10 + _random.Next(30), 41 + _random.Next(30), 1, 1, 1));
         }
 
         private static string LoremIpsum(int minWords, int maxWords, int minSentences, int maxSentences, int numLines)
@@ -63,8 +101,7 @@ namespace Message.Splitter.Services
             var words = new[] { "lorem", "ipsum", "dolor", "sit", "amet", "consectetuer", "adipiscing", "elit", "sed", "diam", "nonummy", "nibh", "euismod", "tincidunt", "ut", "laoreet", "dolore", "magna", "aliquam", "erat" };
 
             var rand = new Random();
-            int numSentences = rand.Next(maxSentences - minSentences)
-                               + minSentences + 1;
+            int numSentences = rand.Next(maxSentences - minSentences) + minSentences + 1;
             int numWords = rand.Next(maxWords - minWords) + minWords + 1;
 
             var sb = new StringBuilder();

@@ -1,5 +1,4 @@
 ﻿using Message.Splitter.Services;
-using MessageProcessor.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
