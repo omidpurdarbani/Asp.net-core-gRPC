@@ -30,41 +30,27 @@ namespace Message.Processor
             {
                 do
                 {
-                    //start the call
                     using var call = _client.RequestMessage();
                     var requestStream = call.RequestStream;
                     var responseStream = call.ResponseStream;
                     isCanceled = false;
 
-                    #region Get Responses
-
-                    //this will run on different threads
                     //log responses when received
                     _ = Task.Run(async () =>
                     {
                         try
                         {
-                            //this will run until the request is closed by RequestMessage on message.splitter
-                            await foreach (var response in responseStream.ReadAllAsync())
+                            //this will run until the call iis marked completed ( in this case it will remain running until some exceptions is thrown ) 
+                            await foreach (var response in responseStream.ReadAllAsync().ConfigureAwait(false))
                             {
                                 _logger.LogInformation("Message Processor[{instanceId}]: Received response: {response.Id}, {response.Engine}, {response.MessageLength}, {response.IsValid}, {response.AdditionalFields.Count}", instanceId, response.Id, response.Engine, response.MessageLength, response.IsValid, response.AdditionalFields);
                             }
                         }
                         catch (RpcException ex)
                         {
-                            if (ex.StatusCode == StatusCode.PermissionDenied)
-                            {
-                                _logger.LogError("Receiving response RPC Error: {ex.Status}, {ex.Message}", ex.Status, ex.Message);
-                            }
-                            else if (ex.StatusCode == StatusCode.Cancelled)
-                            {
-                                _logger.LogWarning("Message Processor[{instanceId}]: RPC Error: {ex.Status}, {ex.Message}", instanceId, ex.Status, ex.Message);
-                                isCanceled = true;
-                            }
-                            else
-                            {
-                                _logger.LogError("Receiving response RPC Error: {ex.Status}, {ex.Message}", ex.Status, ex.Message);
-                            }
+                            if (ex.StatusCode == StatusCode.Cancelled) isCanceled = true;
+
+                            _logger.LogWarning("Message Processor[{instanceId}]: No Response, RPC Error: {ex.Status}, {ex.Message}", instanceId, ex.Status, ex.Message);
                         }
                         catch (Exception ex)
                         {
@@ -73,15 +59,9 @@ namespace Message.Processor
 
                     });
 
-                    #endregion
-
-                    #region Send Requests
-
-                    #region Initial Request
-
                     if (firstTime)
                     {
-                        var request = await _messageService.InitialRequest(instanceId);
+                        var request = await _messageService.InitialRequest(instanceId).ConfigureAwait(false);
 
                         await requestStream.WriteAsync(request);
                         _logger.LogInformation("Message Processor[{instanceId}]: Initial request", instanceId);
@@ -89,53 +69,30 @@ namespace Message.Processor
                         firstTime = false;
                     }
 
-                    #endregion
-
-                    #region Request new messages
-
-                    //sending requests on a loop
-                    //this will run on main thread so the call will never end
                     while (true)
                     {
                         try
                         {
-                            var newRequest = await _messageService.RequestMessage(instanceId);
+                            var newRequest = await _messageService.RequestMessage(instanceId).ConfigureAwait(false);
 
-                            await requestStream.WriteAsync(newRequest);
-                            _logger.LogInformation("Message Processor[{newRequest.Id}]: Requesting for a new message",
-                                newRequest.Id);
+                            await requestStream.WriteAsync(newRequest).ConfigureAwait(false);
 
+                            _logger.LogInformation("Message Processor[{newRequest.Id}]: Requesting for a new message", newRequest.Id);
                         }
                         catch (RpcException ex)
                         {
-                            if (ex.StatusCode == StatusCode.PermissionDenied)
-                            {
-                                _logger.LogError("Receiving response RPC Error: {ex.Status}, {ex.Message}", ex.Status, ex.Message);
-                                break;
-                            }
-                            else if (ex.StatusCode == StatusCode.Cancelled)
-                            {
-                                _logger.LogWarning("Message Processor[{instanceId}]: RPC Error: {ex.Status}, {ex.Message}", instanceId, ex.Status, ex.Message);
-                                isCanceled = true;
-                                break;
-                            }
-                            else
-                            {
-                                _logger.LogError("Requesting message RPC Error: {ex.Status}, {ex.Message}", ex.Status,
-                                    ex.Message);
-                            }
+                            _logger.LogWarning("Message Processor[{instanceId}]: RPC Error: {ex.Status}, {ex.Message}", instanceId, ex.Status, ex.Message);
+
+                            if (ex.StatusCode == StatusCode.Cancelled) isCanceled = true;
+
+                            break;
                         }
                         catch (Exception ex)
                         {
                             _logger.LogError("Requesting message Error: {ex.Message}", ex.Message);
+                            break;
                         }
-
                     }
-
-
-                    #endregion
-
-                    #endregion
 
                 } while (isCanceled);
             }

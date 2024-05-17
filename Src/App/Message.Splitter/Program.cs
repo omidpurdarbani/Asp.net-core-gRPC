@@ -12,7 +12,7 @@ namespace Message.Splitter
         static async Task Main(string[] args)
         {
             var host = Host.CreateDefaultBuilder(args)
-                .ConfigureServices((context, services) =>
+                .ConfigureServices((_, services) =>
                 {
                     services.AddHostedService<HealthChecker>();
                     services.AddHostedService<Worker>();
