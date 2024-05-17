@@ -6,6 +6,8 @@ message MessageQueueRequest {
 	string id = 1;
 	string sender = 2;
 	string message = 3;
+	map<string, string> additionalFields = 4;
+
 }
 
 message ProcessResponse {

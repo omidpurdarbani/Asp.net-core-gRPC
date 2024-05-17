@@ -48,11 +48,10 @@ namespace Message.Processor.Persistence.Services
             var messageLength = message.Length;
             var isValid = true;
 
-            var additionalFields = new Dictionary<string, bool>
-            {
-                { "HasNumbers", Regex.IsMatch(message, @"\d") },
-                { "HasLetters", Regex.IsMatch(message, @"[a-zA-Z]") }
-            };
+            var additionalFields =
+                request.AdditionalFields
+                    .ToDictionary(
+                        additionalField => additionalField.Key, additionalField => Regex.IsMatch(request.Message, additionalField.Value));
 
             var response = new ProcessResponse
             {

@@ -21,11 +21,10 @@ namespace Message.Splitter.Helper
 
         private string LoremIpsum(int minWords, int maxWords, int minSentences, int maxSentences, int numLines)
         {
-            var words = new[] { "lorem", "ipsum", "dolor", "sit", "amet", "consectetuer", "adipiscing", "elit", "sed", "diam", "nonummy", "nibh", "euismod", "tincidunt", "ut", "laoreet", "dolore", "magna", "aliquam", "erat" };
+            var words = new[] { "lorem", "ipsum", "dolor", "sit", "48948", "amet", "consectetuer", "adipiscing", "elit", "sed", "diam", "nonummy", "nibh", "544", "euismod", "tincidunt", "ut", "laoreet", "dolore", "15646546", "magna", "aliquam", "erat" };
 
-            var rand = new Random();
-            int numSentences = rand.Next(maxSentences - minSentences) + minSentences + 1;
-            int numWords = rand.Next(maxWords - minWords) + minWords + 1;
+            int numSentences = _random.Next(maxSentences - minSentences) + minSentences + 1;
+            int numWords = _random.Next(maxWords - minWords) + minWords + 1;
 
             var sb = new StringBuilder();
             for (int p = 0; p < numLines; p++)
@@ -35,7 +34,7 @@ namespace Message.Splitter.Helper
                     for (int w = 0; w < numWords; w++)
                     {
                         if (w > 0) { sb.Append(" "); }
-                        sb.Append(words[rand.Next(words.Length)]);
+                        sb.Append(words[_random.Next(words.Length)]);
                     }
                     sb.Append(". ");
                 }

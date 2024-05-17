@@ -1,5 +1,6 @@
 ﻿using Message.Processor.Persistence.Interfaces;
 using Message.Processor.Persistence.Services;
+using Message.Splitter.Helper;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
@@ -61,7 +62,7 @@ namespace Message.Processor.Services
             var numberOfInstances = int.Parse(_configuration["NumberOfInstances"] ?? "1");
             for (var i = 0; i < numberOfInstances; i++)
             {
-                listOfTasks.Add(Task.Run(async () => await _processingService.StartTask(Guid.NewGuid().ToString()), stoppingToken));
+                listOfTasks.Add(Task.Run(async () => await _processingService.StartTask(Tools.GenerateGuid().ToString()), stoppingToken));
             }
 
             //ensure all tasks are running

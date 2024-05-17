@@ -2,8 +2,8 @@
 {
     public static class ApplicationStore
     {
-        public static bool IsEnabled { get; set; } = false;
-        public static DateTime ExpirationTime { get; set; } = DateTime.UtcNow.AddMinutes(10);
+        public static bool IsEnabled { get; set; } = true;
+        public static DateTime ExpirationTime { get; set; } = DateTime.Now.AddMinutes(10);
         public static int NumberOfMaximumActiveClients { get; set; } = 1;
         public static List<ProcessClients> ProcessClientsList { get; set; } = [];
     }

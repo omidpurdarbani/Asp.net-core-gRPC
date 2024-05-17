@@ -19,7 +19,12 @@ namespace Message.Processor.Persistence.Services
             {
                 Id = message.Id,
                 Message = message.Message,
-                Sender = message.Sender
+                Sender = message.Sender,
+                AdditionalFields =
+                 {
+                     { "HasNumbers", @"\d" },
+                     { "HasLetters", @"[a-zA-Z]" }
+                 }
             };
         }
     }

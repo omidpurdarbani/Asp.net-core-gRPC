@@ -101,6 +101,7 @@ namespace Message.Splitter.Services
                     }
 
                     #endregion 
+
                 }
                 catch (RpcException ex)
                 {
