@@ -14,8 +14,8 @@ namespace Message.Splitter
             var host = Host.CreateDefaultBuilder(args)
                 .ConfigureServices((context, services) =>
                 {
-                    services.AddHostedService<Worker>();
                     services.AddHostedService<HealthChecker>();
+                    services.AddHostedService<Worker>();
                     services.AddSingleton<GrpcMessageService>();
                     services.AddSingleton<IMessageService, MessageService>();
                 })
