@@ -30,7 +30,7 @@ namespace Message.Splitter.Services
 
                 if (_messageService.ProcessClient(request))
                 {
-                    _logger.LogInformation("Message Splitter: Registered process with ID: {request.Id}", request.Id);
+                    _logger.LogInformation("Message Splitter: Process registered process with ID: {request.Id}", request.Id);
                     continue;
                 }
 

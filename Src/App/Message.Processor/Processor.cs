@@ -56,13 +56,15 @@ namespace Message.Processor
                             {
                                 _logger.LogError("Receiving response RPC Error: {ex.Status}, {ex.Message}", ex.Status, ex.Message);
                             }
-                            if (ex.StatusCode == StatusCode.Cancelled)
+                            else if (ex.StatusCode == StatusCode.Cancelled)
                             {
                                 _logger.LogWarning("Message Processor[{instanceId}]: RPC Error: {ex.Status}, {ex.Message}", instanceId, ex.Status, ex.Message);
                                 isCanceled = true;
                             }
-
-                            _logger.LogError("Receiving response RPC Error: {ex.Status}, {ex.Message}", ex.Status, ex.Message);
+                            else
+                            {
+                                _logger.LogError("Receiving response RPC Error: {ex.Status}, {ex.Message}", ex.Status, ex.Message);
+                            }
                         }
                         catch (Exception ex)
                         {
@@ -111,15 +113,17 @@ namespace Message.Processor
                                 _logger.LogError("Receiving response RPC Error: {ex.Status}, {ex.Message}", ex.Status, ex.Message);
                                 break;
                             }
-                            if (ex.StatusCode == StatusCode.Cancelled)
+                            else if (ex.StatusCode == StatusCode.Cancelled)
                             {
                                 _logger.LogWarning("Message Processor[{instanceId}]: RPC Error: {ex.Status}, {ex.Message}", instanceId, ex.Status, ex.Message);
                                 isCanceled = true;
                                 break;
                             }
-
-                            _logger.LogError("Requesting message RPC Error: {ex.Status}, {ex.Message}", ex.Status,
-                                ex.Message);
+                            else
+                            {
+                                _logger.LogError("Requesting message RPC Error: {ex.Status}, {ex.Message}", ex.Status,
+                                    ex.Message);
+                            }
                         }
                         catch (Exception ex)
                         {
