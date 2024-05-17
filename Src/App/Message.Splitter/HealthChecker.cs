@@ -38,7 +38,7 @@ public class HealthChecker : BackgroundService
         {
             try
             {
-                var healthCheckInfo = new HealthCheckInfoDTO()
+                var healthCheckInfo = new HealthCheckInfoDTO
                 {
                     Id = _id.ToString(),
                     SystemTime = DateTime.UtcNow,
