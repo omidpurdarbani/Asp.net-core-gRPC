@@ -2,7 +2,7 @@ syntax = "proto3";
 
 option csharp_namespace = "GrpcMessage";
 
-message MessageQueueResponse {
+message MessageQueueRequest {
 	string id = 1;
 	string sender = 2;
 	string message = 3;
@@ -17,5 +17,5 @@ message ProcessResponse {
 }
 
 service MessageProcessor {
-	rpc ProcessMessage (stream MessageQueueResponse) returns (stream ProcessResponse);
+	rpc ProcessMessage (stream MessageQueueRequest) returns (stream ProcessResponse);
 }

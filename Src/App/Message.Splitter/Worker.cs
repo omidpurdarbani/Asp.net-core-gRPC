@@ -39,7 +39,7 @@ namespace Message.Splitter.Services
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogWarning("Message Splitter has started...");
+            _logger.LogInformation("Message Splitter has started...");
             await _host.RunAsync(stoppingToken);
         }
     }

@@ -1,6 +1,7 @@
 ﻿using Grpc.Core;
 using Grpc.Net.Client;
 using GrpcMessage;
+using Message.Processor.Persistence.Interfaces;
 using Microsoft.Extensions.Logging;
 
 namespace Message.Processor.Services
@@ -8,41 +9,33 @@ namespace Message.Processor.Services
     public class ProcessingService
     {
         private readonly ILogger<ProcessingService> _logger;
-        private readonly Random _random;
+        private readonly IMessageService _messageService;
+        private readonly MessageSplitter.MessageSplitterClient _client;
 
-        public ProcessingService(ILogger<ProcessingService> logger)
+        public ProcessingService(ILogger<ProcessingService> logger, IMessageService messageService)
         {
             _logger = logger;
-            _random = new Random();
+            _messageService = messageService;
+
+            var channel = GrpcChannel.ForAddress("http://localhost:6001");
+            _client = new MessageSplitter.MessageSplitterClient(channel);
         }
 
         public async Task StartTask(string instanceId)
         {
-            _logger.LogInformation($"Message Processor[{instanceId}]: Created");
+            _logger.LogInformation("Message Processor[{instanceId}]: Created", instanceId);
 
             try
             {
-                var channel = GrpcChannel.ForAddress("http://localhost:6001");
-                var client = new MessageSplitter.MessageSplitterClient(channel);
-
-                var wait = _random.Next(1000, 1000);
-                await Task.Delay(wait);
-                var initConnection = new MessageRequest
-                {
-                    Id = instanceId,
-                    Type = "RegexEngine"
-                };
-
-                _logger.LogInformation($"Message Processor[{initConnection.Id}]: Initial request");
-
-                using var call = client.RequestMessage();
-
+                //start call
+                using var call = _client.RequestMessage();
                 var requestStream = call.RequestStream;
                 var responseStream = call.ResponseStream;
 
-                await requestStream.WriteAsync(initConnection);
+                #region Get Responses
 
-                //run on different thread
+                //this will run on different threads
+                //log responses when received
                 _ = Task.Run(async () =>
                 {
                     try
@@ -50,39 +43,67 @@ namespace Message.Processor.Services
                         //this will run until the request is closed by RequestMessage on message.splitter
                         await foreach (var response in responseStream.ReadAllAsync())
                         {
-                            _logger.LogInformation($"Message Processor[{instanceId}]: Received response: {response.Id}, {response.Engine}, {response.MessageLength}, {response.IsValid}, {response.AdditionalFields.Count}");
+                            _logger.LogInformation("Message Processor[{instanceId}]: Received response: {response.Id}, {response.Engine}, {response.MessageLength}, {response.IsValid}, {response.AdditionalFields.Count}", instanceId, response.Id, response.Engine, response.MessageLength, response.IsValid, response.AdditionalFields);
                         }
                     }
                     catch (RpcException ex)
                     {
-                        _logger.LogError($"RPC Error: {ex.Status}, {ex.Message}");
+                        _logger.LogError("Receiving response RPC Error: {ex.Status}, {ex.Message}", ex.Status, ex.Message);
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError($"Error receiving response: {ex.Message}");
+                        _logger.LogError("Receiving response Error: {ex.Message}", ex.Message);
                     }
                 });
 
+                #endregion
+
+                #region Send Requests
+
+                #region Initial Request
+
+                var request = _messageService.InitialRequest(instanceId);
+
+                await requestStream.WriteAsync(request);
+                _logger.LogInformation("Message Processor[{instanceId}]: Initial request", instanceId);
+
+                #endregion
+
+                #region Request new messages
+
+                //sending requests on a loop
+                //this will run on main thread so the call will never end
                 while (true)
                 {
-                    wait = _random.Next(200, 200);
-                    await Task.Delay(wait);
-
-                    var newRequest = new MessageRequest()
+                    try
                     {
-                        Id = instanceId,
-                        Type = "RegexEngine"
-                    };
+                        var newRequest = await _messageService.RequestMessage(instanceId);
 
-                    _logger.LogInformation($"Message Processor[{newRequest.Id}]: Requesting for a new message");
+                        await requestStream.WriteAsync(newRequest);
+                        _logger.LogInformation("Message Processor[{newRequest.Id}]: Requesting for a new message",
+                            newRequest.Id);
 
-                    await requestStream.WriteAsync(newRequest);
+                    }
+                    catch (RpcException ex)
+                    {
+                        _logger.LogError("Requesting message RPC Error: {ex.Status}, {ex.Message}", ex.Status,
+                            ex.Message);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError("Requesting message Error: {ex.Message}", ex.Message);
+                    }
                 }
+
+
+                #endregion
+
+                #endregion
 
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error in StartTask: {ex.Message}");
+                _logger.LogError("Message Processor[{instanceId}]: Error in StartTask: {ex.Message}", instanceId, ex.Message);
             }
         }
     }

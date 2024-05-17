@@ -42,7 +42,7 @@ namespace Message.Splitter.Services
                     var message = await GenerateRandomMessage();
                     _logger.LogInformation($"Message Splitter: Sending message to process: {message.Message}");
 
-                    var process = new MessageQueueResponse
+                    var process = new MessageQueueRequest
                     {
                         Id = message.Id,
                         Sender = message.Sender,

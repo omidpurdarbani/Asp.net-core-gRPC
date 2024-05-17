@@ -1,4 +1,6 @@
-﻿using Message.Processor.Services;
+﻿using Message.Processor.Persistence.Interfaces;
+using Message.Processor.Persistence.Services;
+using Message.Processor.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -9,11 +11,12 @@ namespace Message.Processor
         static async Task Main(string[] args)
         {
             var host = Host.CreateDefaultBuilder(args)
-                .ConfigureServices((context, services) =>
+                .ConfigureServices((_, services) =>
                 {
                     services.AddHostedService<Worker>();
-                    services.AddSingleton<GrpcProcessingService>();
                     services.AddSingleton<ProcessingService>();
+                    services.AddSingleton<GrpcProcessingService>();
+                    services.AddSingleton<IMessageService, MessageService>();
                 })
                 .Build();
 

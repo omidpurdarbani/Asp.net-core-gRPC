@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using Message.Processor.Persistence.Interfaces;
+using Message.Processor.Persistence.Services;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
@@ -15,7 +17,7 @@ namespace Message.Processor.Services
         private readonly ILogger<Worker> _logger;
         private readonly IConfiguration _configuration;
 
-        public Worker(IConfiguration configuration, ProcessingService processingService, GrpcProcessingService grpcProcessingService, ILogger<Worker> logger)
+        public Worker(IConfiguration configuration, GrpcProcessingService grpcProcessingService, ProcessingService processingService, ILogger<Worker> logger)
         {
             _processingService = processingService;
             _logger = logger;
@@ -31,6 +33,7 @@ namespace Message.Processor.Services
                     services.AddGrpc();
                     services.AddSingleton(processingService);
                     services.AddSingleton(grpcProcessingService);
+                    services.AddSingleton<IMessageService, MessageService>();
                 })
                 .Configure(app =>
                 {
