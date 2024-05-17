@@ -30,7 +30,7 @@ namespace Message.Processor
             {
                 do
                 {
-                    //start call
+                    //start the call
                     using var call = _client.RequestMessage();
                     var requestStream = call.RequestStream;
                     var responseStream = call.ResponseStream;
@@ -42,37 +42,33 @@ namespace Message.Processor
                     //log responses when received
                     _ = Task.Run(async () =>
                     {
-                        while (true)
+                        try
                         {
-                            try
+                            //this will run until the request is closed by RequestMessage on message.splitter
+                            await foreach (var response in responseStream.ReadAllAsync())
                             {
-                                //this will run until the request is closed by RequestMessage on message.splitter
-                                await foreach (var response in responseStream.ReadAllAsync())
-                                {
-                                    _logger.LogInformation("Message Processor[{instanceId}]: Received response: {response.Id}, {response.Engine}, {response.MessageLength}, {response.IsValid}, {response.AdditionalFields.Count}", instanceId, response.Id, response.Engine, response.MessageLength, response.IsValid, response.AdditionalFields);
-                                }
-                            }
-                            catch (RpcException ex)
-                            {
-                                if (ex.StatusCode == StatusCode.PermissionDenied)
-                                {
-                                    _logger.LogError("Receiving response RPC Error: {ex.Status}, {ex.Message}", ex.Status, ex.Message);
-                                    break;
-                                }
-                                if (ex.StatusCode == StatusCode.Cancelled)
-                                {
-                                    _logger.LogWarning("Message Processor[{instanceId}]: RPC Error: {ex.Status}, {ex.Message}", instanceId, ex.Status, ex.Message);
-                                    isCanceled = true;
-                                    break;
-                                }
-
-                                _logger.LogError("Receiving response RPC Error: {ex.Status}, {ex.Message}", ex.Status, ex.Message);
-                            }
-                            catch (Exception ex)
-                            {
-                                _logger.LogError("Receiving response Error: {ex.Message}", ex.Message);
+                                _logger.LogInformation("Message Processor[{instanceId}]: Received response: {response.Id}, {response.Engine}, {response.MessageLength}, {response.IsValid}, {response.AdditionalFields.Count}", instanceId, response.Id, response.Engine, response.MessageLength, response.IsValid, response.AdditionalFields);
                             }
                         }
+                        catch (RpcException ex)
+                        {
+                            if (ex.StatusCode == StatusCode.PermissionDenied)
+                            {
+                                _logger.LogError("Receiving response RPC Error: {ex.Status}, {ex.Message}", ex.Status, ex.Message);
+                            }
+                            if (ex.StatusCode == StatusCode.Cancelled)
+                            {
+                                _logger.LogWarning("Message Processor[{instanceId}]: RPC Error: {ex.Status}, {ex.Message}", instanceId, ex.Status, ex.Message);
+                                isCanceled = true;
+                            }
+
+                            _logger.LogError("Receiving response RPC Error: {ex.Status}, {ex.Message}", ex.Status, ex.Message);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError("Receiving response Error: {ex.Message}", ex.Message);
+                        }
+
                     });
 
                     #endregion
