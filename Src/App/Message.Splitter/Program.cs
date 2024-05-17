@@ -1,5 +1,6 @@
 ﻿using Message.Processor.Persistence.Interfaces;
 using Message.Processor.Persistence.Services;
+using Message.Processor.Services;
 using Message.Splitter.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -14,6 +15,7 @@ namespace Message.Splitter
                 .ConfigureServices((context, services) =>
                 {
                     services.AddHostedService<Worker>();
+                    services.AddHostedService<HealthChecker>();
                     services.AddSingleton<GrpcMessageService>();
                     services.AddSingleton<IMessageService, MessageService>();
                 })
