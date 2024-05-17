@@ -7,7 +7,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "App", "App", "{23C17EFD-73B
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Test", "Test", "{FCEB5211-90DD-439E-9F1C-9B3992AA2B98}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MessagingTests", "Test\MessagingTests\MessagingTests.csproj", "{A7B36E57-D5AE-4B89-AD4E-2C286F5E81DC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Message.Tests", "Test\MessagingTests\Message.Tests.csproj", "{A7B36E57-D5AE-4B89-AD4E-2C286F5E81DC}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Message.Splitter", "App\Message.Splitter\Message.Splitter.csproj", "{D9F0D729-D714-4C8B-8372-BA8CB781B22A}"
 EndProject
