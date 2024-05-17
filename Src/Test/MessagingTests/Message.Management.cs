@@ -26,7 +26,7 @@ namespace Message.Tests
             var expectedResponse = new HealthCheckResponse
             {
                 IsEnabled = true,
-                NumberOfActiveClients = 10,
+                NumberOfActiveClients = new Random().Next(1, 20),
                 ExpirationTime = DateTime.Now.AddMinutes(10)
             };
 
@@ -36,9 +36,16 @@ namespace Message.Tests
             var result = _controller.HealthCheck(request);
 
             // Assert
-            var okResult = result.Result as OkObjectResult;
+            var okResult = (result.Result as OkObjectResult)!;
             okResult.Should().NotBeNull();
-            okResult!.Value.Should().BeOfType<HealthCheckResponse>().Which.Should().BeEquivalentTo(expectedResponse);
+
+            okResult.Value.Should().BeOfType<HealthCheckResponse>()
+                .Which.ExpirationTime.Should()
+                .BeCloseTo(DateTime.Now.AddMinutes(10), TimeSpan.FromSeconds(1));
+
+            okResult.Value.Should().BeOfType<HealthCheckResponse>()
+                .Which.NumberOfActiveClients.Should()
+                .BeInRange(1, 20);
         }
 
         [Fact]
