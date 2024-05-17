@@ -14,7 +14,7 @@ namespace Message.Processor
                 .ConfigureServices((_, services) =>
                 {
                     services.AddHostedService<Worker>();
-                    services.AddSingleton<ProcessingService>();
+                    services.AddSingleton<Processor>();
                     services.AddSingleton<GrpcProcessingService>();
                     services.AddSingleton<IMessageService, MessageService>();
                 })

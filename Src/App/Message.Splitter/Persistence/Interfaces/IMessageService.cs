@@ -11,7 +11,7 @@ namespace Message.Processor.Persistence.Interfaces
 
         public bool IsApplicationEnabled();
         public bool IsClientEnabled(string requestId);
-        public void ProcessClient(MessageRequest request);
+        public bool ProcessClient(MessageRequest request);
 
     }
 }

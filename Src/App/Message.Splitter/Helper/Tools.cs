@@ -45,8 +45,10 @@ namespace Message.Splitter.Helper
 
         public static Guid GenerateGuid()
         {
+            var random = new Random();
             var macAddress = GetMacAddress();
-            var hash = MD5.HashData(Encoding.UTF8.GetBytes(macAddress));
+            var text = macAddress + random.Next();
+            var hash = MD5.HashData(Encoding.UTF8.GetBytes(text));
             return new Guid(hash);
         }
 

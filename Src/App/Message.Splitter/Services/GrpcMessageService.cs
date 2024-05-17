@@ -28,14 +28,19 @@ namespace Message.Splitter.Services
                     LogAndThrowPermissionDenied(request.Id);
                 }
 
+                if (_messageService.ProcessClient(request))
+                {
+                    continue;
+                }
+
+
+                if (!_messageService.IsClientEnabled(request.Id))
+                {
+                    LogAndThrowCancelled(request.Id);
+                }
+
                 try
                 {
-                    _messageService.ProcessClient(request);
-
-                    if (!_messageService.IsClientEnabled(request.Id))
-                    {
-                        continue;
-                    }
 
                     _logger.LogInformation("Message Splitter: Received message request with ID: {request.Id}", request.Id);
 
@@ -58,6 +63,12 @@ namespace Message.Splitter.Services
         {
             _logger.LogWarning("Application is not enabled. Skipping request ID: {requestId}", requestId);
             throw new RpcException(new Status(StatusCode.PermissionDenied, "Application is not enabled."));
+        }
+
+        private void LogAndThrowCancelled(string requestId)
+        {
+            _logger.LogWarning("Processor is not enabled. Skipping request ID: {requestId}", requestId);
+            throw new RpcException(new Status(StatusCode.Cancelled, "Processor is not enabled."));
         }
 
     }

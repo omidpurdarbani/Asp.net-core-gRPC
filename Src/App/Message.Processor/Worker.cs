@@ -13,12 +13,12 @@ namespace Message.Processor.Services
 {
     public class Worker : BackgroundService
     {
-        private readonly ProcessingService _processingService;
+        private readonly Processor _processingService;
         private readonly IWebHost _host;
         private readonly ILogger<Worker> _logger;
         private readonly IConfiguration _configuration;
 
-        public Worker(IConfiguration configuration, GrpcProcessingService grpcProcessingService, ProcessingService processingService, ILogger<Worker> logger)
+        public Worker(IConfiguration configuration, GrpcProcessingService grpcProcessingService, Processor processingService, ILogger<Worker> logger)
         {
             _processingService = processingService;
             _logger = logger;

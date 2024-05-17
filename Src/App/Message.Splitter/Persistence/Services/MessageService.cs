@@ -80,7 +80,7 @@ namespace Message.Processor.Persistence.Services
             return storeProcess is { IsEnabled: true };
         }
 
-        public void ProcessClient(MessageRequest request)
+        public bool ProcessClient(MessageRequest request)
         {
             var storeProcess = ApplicationStore.ProcessClientsList.FirstOrDefault(p => p.Id == request.Id);
             if (storeProcess == null)
@@ -92,11 +92,13 @@ namespace Message.Processor.Persistence.Services
                     LastTransactionTime = DateTime.Now,
                     IsEnabled = false
                 });
+                return true;
             }
             else if (!storeProcess.IsEnabled && ApplicationStore.ProcessClientsList.Count(p => p.IsEnabled && DateTime.Now <= p.LastTransactionTime.AddMinutes(5)) < ApplicationStore.NumberOfMaximumActiveClients)
             {
                 storeProcess.IsEnabled = true;
             }
+            return false;
         }
     }
 }
