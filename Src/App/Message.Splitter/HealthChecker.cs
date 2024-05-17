@@ -15,10 +15,12 @@ public class HealthChecker : BackgroundService
     private readonly IConfiguration _configuration;
     private readonly HttpClient _httpClient;
     private readonly Guid _id;
+    private bool _active;
 
     public HealthChecker(ILogger<HealthChecker> logger, IConfiguration configuration, HttpClient httpClient)
     {
         _logger = logger;
+        _active = true;
         _configuration = configuration;
         _httpClient = httpClient;
         _id = GenerateGuid();
@@ -32,7 +34,7 @@ public class HealthChecker : BackgroundService
 
         using PeriodicTimer timer = new(TimeSpan.FromSeconds(period));
 
-        while (!stoppingToken.IsCancellationRequested && await timer.WaitForNextTickAsync(stoppingToken))
+        while (_active && !stoppingToken.IsCancellationRequested && await timer.WaitForNextTickAsync(stoppingToken))
         {
             try
             {
@@ -72,6 +74,11 @@ public class HealthChecker : BackgroundService
         return await _httpClient.PostAsJsonAsync(url, healthCheckInfo);
     }
 
+    private void DeActiveSystem()
+    {
+        _active = false;
+    }
+
     private async Task RetryHealthCheckAsync(string url, HealthCheckInfoDTO healthCheckInfo)
     {
         for (var i = 0; i < 5; i++)
@@ -82,7 +89,7 @@ public class HealthChecker : BackgroundService
             if (!response.IsSuccessStatusCode) continue;
 
             var managementResponse = await response.Content.ReadFromJsonAsync<ManagementResponseDTO>();
-            if (managementResponse == null) return;
+            if (managementResponse == null) continue;
 
             HandleManagementResponse(managementResponse);
             return;
@@ -90,7 +97,7 @@ public class HealthChecker : BackgroundService
 
         // Disable the service
         _logger.LogError("Failed to execute HealthChecker after 5 retries.");
-
+        DeActiveSystem();
     }
 
     private void HandleManagementResponse(ManagementResponseDTO response)
@@ -99,15 +106,21 @@ public class HealthChecker : BackgroundService
         {
             // Disable message processing
             _logger.LogInformation("Disabling message processing as per management response.");
+            DeActiveSystem();
+
         }
 
         if (response.ExpirationTime < DateTime.UtcNow)
         {
             // Expiration time has passed, disable the service
             _logger.LogInformation("Service has expired as per management response.");
+            DeActiveSystem();
+
         }
 
         // Handle other fields as necessary
+
+        _logger.LogInformation("Health Checker has been executed...");
     }
 
     private static Guid GenerateGuid()

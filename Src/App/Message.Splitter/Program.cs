@@ -17,6 +17,7 @@ namespace Message.Splitter
                     services.AddHostedService<HealthChecker>();
                     services.AddHostedService<Worker>();
                     services.AddSingleton<GrpcMessageService>();
+                    services.AddHttpClient();
                     services.AddSingleton<IMessageService, MessageService>();
                 })
                 .Build();
