@@ -45,18 +45,23 @@ namespace Message.Processor.Services
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogWarning("Message Processor has started...");
+            _logger.LogInformation("Message Processor has started...");
 
-            var listOfTasks = new List<Task>();
-            //var numberOfInstances = int.Parse(_configuration["NumberOfInstances"] ?? "0");
-            var numberOfInstances = 1;
-            for (int i = 0; i < numberOfInstances; i++)
+            //track of tasks
+            var listOfTasks = new List<Task>
             {
-                listOfTasks.Add(Task.Run(() => _processingService.StartTask(Guid.NewGuid().ToString()), stoppingToken));
+                //run grpc server
+                Task.Run(async () => await _host.RunAsync(stoppingToken), stoppingToken)
+            };
+
+            //run all service instances
+            var numberOfInstances = int.Parse(_configuration["NumberOfInstances"] ?? "1");
+            for (var i = 0; i < numberOfInstances; i++)
+            {
+                listOfTasks.Add(Task.Run(async () => await _processingService.StartTask(Guid.NewGuid().ToString()), stoppingToken));
             }
 
-            listOfTasks.Add(Task.Run(() => _host.RunAsync(stoppingToken), stoppingToken));
-
+            //ensure all tasks are running
             await Task.WhenAll(listOfTasks).ConfigureAwait(false);
         }
     }

@@ -42,13 +42,15 @@ namespace Message.Processor.Services
 
                 await requestStream.WriteAsync(initConnection);
 
+                //run on different thread
                 _ = Task.Run(async () =>
                 {
                     try
                     {
+                        //this will run until the request is closed by RequestMessage on message.splitter
                         await foreach (var response in responseStream.ReadAllAsync())
                         {
-                            _logger.LogInformation($"Message Processor[{instanceId}]: Received response: {response.Id}, {response.Engine}, {response.MessageLength}, {response.IsValid}");
+                            _logger.LogInformation($"Message Processor[{instanceId}]: Received response: {response.Id}, {response.Engine}, {response.MessageLength}, {response.IsValid}, {response.AdditionalFields.Count}");
                         }
                     }
                     catch (RpcException ex)
@@ -76,6 +78,7 @@ namespace Message.Processor.Services
 
                     await requestStream.WriteAsync(newRequest);
                 }
+
             }
             catch (Exception ex)
             {
