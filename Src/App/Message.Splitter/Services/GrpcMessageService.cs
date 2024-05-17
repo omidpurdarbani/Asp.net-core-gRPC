@@ -1,60 +1,51 @@
-﻿using System.Text;
-using Grpc.Core;
+﻿using Grpc.Core;
 using Grpc.Net.Client;
 using GrpcMessage;
+using Message.Processor.Persistence.Interfaces;
 using Microsoft.Extensions.Logging;
 
 namespace Message.Splitter.Services
 {
     public class GrpcMessageService : MessageSplitter.MessageSplitterBase
     {
-        private readonly MessageService _messageService;
+        private readonly IMessageService _messageService;
         private readonly ILogger<GrpcMessageService> _logger;
-        private readonly Random _random;
+        private readonly MessageProcessor.MessageProcessorClient _client;
 
-
-
-        public GrpcMessageService(MessageService messageService, ILogger<GrpcMessageService> logger)
+        public GrpcMessageService(IMessageService messageService, ILogger<GrpcMessageService> logger)
         {
             _messageService = messageService;
-            _random = new Random();
             _logger = logger;
+
+            var channel = GrpcChannel.ForAddress("http://localhost:5001");
+            _client = new MessageProcessor.MessageProcessorClient(channel);
         }
 
         public override async Task RequestMessage(IAsyncStreamReader<MessageRequest> requestStream, IServerStreamWriter<MessageResponse> responseStream, ServerCallContext context)
         {
-            //this will run until request is closed by calling service
+            //this will read incoming requests from a call until its marked as completed 
             await foreach (var request in requestStream.ReadAllAsync())
             {
                 try
                 {
-                    _logger.LogInformation($"Message Splitter: Received message request with ID: {request.Id}");
+                    _logger.LogInformation("Message Splitter: Received message request with ID: {request.Id}", request.Id);
+                    var message = await _messageService.GetMessageFromQueue();
 
-                    #region get results
+                    #region Get results from Message.Processor
 
-                    var channel = GrpcChannel.ForAddress("http://localhost:5001");
-                    var client = new MessageProcessor.MessageProcessorClient(channel);
-
-                    using var call = client.ProcessMessage();
+                    //starting call for Message.Processor
+                    using var call = _client.ProcessMessage();
                     var requestStreamProcess = call.RequestStream;
                     var responseStreamProcess = call.ResponseStream;
 
-                    var message = await GenerateRandomMessage();
-                    _logger.LogInformation($"Message Splitter: Sending message to process: {message.Message}");
-
-                    var process = new MessageQueueRequest
-                    {
-                        Id = message.Id,
-                        Sender = message.Sender,
-                        Message = message.Message
-                    };
-
-                    await requestStreamProcess.WriteAsync(process);
+                    _logger.LogInformation("Message Splitter: Sending message to process: {message.Message}", message.Message);
+                    await requestStreamProcess.WriteAsync(message);
                     await requestStreamProcess.CompleteAsync();
 
+                    //this will run until the request is closed by ProcessMessage on message.processor
                     await foreach (var response in responseStreamProcess.ReadAllAsync())
                     {
-                        _logger.LogInformation($"Message Splitter: Processed message: MessageLength: {response.MessageLength}, IsValid: {response.IsValid}");
+                        _logger.LogInformation("Message Splitter: Processed message: MessageLength: {response.MessageLength}, IsValid: {response.IsValid}", response.MessageLength, response.IsValid);
 
                         var messageResponse = new MessageResponse()
                         {
@@ -65,53 +56,22 @@ namespace Message.Splitter.Services
                             AdditionalFields = { response.AdditionalFields }
                         };
 
-                        _logger.LogInformation($"Message Splitter: Sending response for ID: {request.Id}");
+                        _logger.LogInformation("Message Splitter: Sending response for ID: {request.Id}", request.Id);
 
                         await responseStream.WriteAsync(messageResponse);
                     }
 
                     #endregion 
-
                 }
                 catch (RpcException ex)
                 {
-                    _logger.LogError($"RPC Error: {ex.Status}, {ex.Message}");
+                    _logger.LogError("RPC Error: {ex.Status}, {ex.Message}", ex.Status, ex.Message);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError($"Error in RequestMessage: {ex.Message}");
+                    _logger.LogError("Error in RequestMessage: {ex.Message}", ex.Message);
                 }
             }
-        }
-        private async Task<(string Id, string Sender, string Message)> GenerateRandomMessage()
-        {
-            await Task.Delay(200);
-            return (Guid.NewGuid().ToString(), "Legal", LoremIpsum(10 + _random.Next(30), 41 + _random.Next(30), 1, 1, 1));
-        }
-
-        private static string LoremIpsum(int minWords, int maxWords, int minSentences, int maxSentences, int numLines)
-        {
-            var words = new[] { "lorem", "ipsum", "dolor", "sit", "amet", "consectetuer", "adipiscing", "elit", "sed", "diam", "nonummy", "nibh", "euismod", "tincidunt", "ut", "laoreet", "dolore", "magna", "aliquam", "erat" };
-
-            var rand = new Random();
-            int numSentences = rand.Next(maxSentences - minSentences) + minSentences + 1;
-            int numWords = rand.Next(maxWords - minWords) + minWords + 1;
-
-            var sb = new StringBuilder();
-            for (int p = 0; p < numLines; p++)
-            {
-                for (int s = 0; s < numSentences; s++)
-                {
-                    for (int w = 0; w < numWords; w++)
-                    {
-                        if (w > 0) { sb.Append(" "); }
-                        sb.Append(words[rand.Next(words.Length)]);
-                    }
-                    sb.Append(". ");
-                }
-                sb.AppendLine();
-            }
-            return sb.ToString();
         }
 
     }

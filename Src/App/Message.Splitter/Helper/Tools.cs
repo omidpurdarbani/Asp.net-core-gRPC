@@ -1,20 +1,23 @@
 ﻿using System.Text;
-using Microsoft.Extensions.Logging;
 
-namespace Message.Splitter.Services
+namespace Message.Splitter.Helper
 {
-    public class MessageService
+    public class Tools
     {
-        private readonly ILogger<MessageService> _logger;
         private readonly Random _random;
 
-        private async Task<(string Id, string Sender, string Message)> GenerateRandomMessage()
+        public Tools()
+        {
+            _random = new Random();
+        }
+
+        public async Task<(string Id, string Sender, string Message)> GenerateRandomMessage()
         {
             await Task.Delay(200);
             return (Guid.NewGuid().ToString(), "Legal", LoremIpsum(10 + _random.Next(30), 41 + _random.Next(30), 1, 1, 1));
         }
 
-        private static string LoremIpsum(int minWords, int maxWords, int minSentences, int maxSentences, int numLines)
+        private string LoremIpsum(int minWords, int maxWords, int minSentences, int maxSentences, int numLines)
         {
             var words = new[] { "lorem", "ipsum", "dolor", "sit", "amet", "consectetuer", "adipiscing", "elit", "sed", "diam", "nonummy", "nibh", "euismod", "tincidunt", "ut", "laoreet", "dolore", "magna", "aliquam", "erat" };
 

@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using Message.Processor.Persistence.Interfaces;
+using Message.Processor.Persistence.Services;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,7 +14,7 @@ namespace Message.Splitter.Services
         private readonly ILogger<Worker> _logger;
         private readonly IWebHost _host;
 
-        public Worker(GrpcMessageService grpcMessageService, MessageService messageService, ILogger<Worker> logger)
+        public Worker(GrpcMessageService grpcMessageService, ILogger<Worker> logger)
         {
             _logger = logger;
             _host = new WebHostBuilder()
@@ -24,7 +26,7 @@ namespace Message.Splitter.Services
                 {
                     services.AddGrpc();
                     services.AddSingleton(grpcMessageService);
-                    services.AddSingleton(messageService);
+                    services.AddSingleton<IMessageService, MessageService>();
                 })
                 .Configure(app =>
                 {
