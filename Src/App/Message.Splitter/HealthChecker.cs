@@ -1,8 +1,7 @@
 ﻿using System.Net.Http.Json;
-using System.Net.NetworkInformation;
-using System.Security.Cryptography;
-using System.Text;
+using Message.Splitter.Helper;
 using Message.Splitter.Models;
+using Message.Splitter.Store;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -15,43 +14,76 @@ public class HealthChecker : BackgroundService
     private readonly IConfiguration _configuration;
     private readonly HttpClient _httpClient;
     private readonly Guid _id;
-    private bool _active;
+    private bool _active => ApplicationStore.IsEnabled;
+    private readonly int _period;
+
 
     public HealthChecker(ILogger<HealthChecker> logger, IConfiguration configuration, HttpClient httpClient)
     {
         _logger = logger;
-        _active = true;
+        _period = 30;
         _configuration = configuration;
         _httpClient = httpClient;
-        _id = GenerateGuid();
+        _id = Tools.GenerateGuid();
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _logger.LogInformation("Health Checker has started...");
 
-        int period = 30;
+        #region Initial Request
 
-        using PeriodicTimer timer = new(TimeSpan.FromSeconds(period));
+        var healthCheckInfo = new HealthCheckInfoDTO
+        {
+            Id = _id.ToString(),
+            SystemTime = DateTime.UtcNow,
+            NumberOfConnectedClients = ApplicationStore.ProcessClientsList.Count
+        };
+        var managementUrl = _configuration["ManagementUrl"] ?? "";
+
+        try
+        {
+            var response = await SendHealthCheckAsync(managementUrl, healthCheckInfo);
+            if (response.IsSuccessStatusCode)
+            {
+                var managementResponse = await response.Content.ReadFromJsonAsync<ManagementResponseDTO>(cancellationToken: stoppingToken);
+                if (managementResponse != null)
+                {
+                    HandleManagementResponse(managementResponse);
+                }
+            }
+            else
+            {
+                await RetryHealthCheckAsync(managementUrl, healthCheckInfo);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError("Failed to execute HealthChecker with exception message: {ex.Message}", ex.Message);
+            await RetryHealthCheckAsync(managementUrl, healthCheckInfo);
+        }
+
+
+        #endregion
+
+        #region Priodic Request
+
+        using PeriodicTimer timer = new(TimeSpan.FromSeconds(_period));
 
         while (_active && !stoppingToken.IsCancellationRequested && await timer.WaitForNextTickAsync(stoppingToken))
         {
+            healthCheckInfo = new HealthCheckInfoDTO
+            {
+                Id = _id.ToString(),
+                SystemTime = DateTime.UtcNow,
+                NumberOfConnectedClients = ApplicationStore.ProcessClientsList.Count
+            };
             try
             {
-                var healthCheckInfo = new HealthCheckInfoDTO
-                {
-                    Id = _id.ToString(),
-                    SystemTime = DateTime.UtcNow,
-                    NumberOfConnectedClients = 5 //todo
-                };
-
-                var managementUrl = _configuration["ManagementUrl"] ?? "";
                 var response = await SendHealthCheckAsync(managementUrl, healthCheckInfo);
-
                 if (response.IsSuccessStatusCode)
                 {
                     var managementResponse = await response.Content.ReadFromJsonAsync<ManagementResponseDTO>(cancellationToken: stoppingToken);
-
                     if (managementResponse != null)
                     {
                         HandleManagementResponse(managementResponse);
@@ -64,9 +96,12 @@ public class HealthChecker : BackgroundService
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Failed to execute HealthChecker with exception message: {ex.Message}");
+                _logger.LogError("Failed to execute HealthChecker with exception message: {ex.Message}", ex.Message);
+                await RetryHealthCheckAsync(managementUrl, healthCheckInfo);
             }
         }
+
+        #endregion
     }
 
     private async Task<HttpResponseMessage> SendHealthCheckAsync(string url, HealthCheckInfoDTO healthCheckInfo)
@@ -74,9 +109,9 @@ public class HealthChecker : BackgroundService
         return await _httpClient.PostAsJsonAsync(url, healthCheckInfo);
     }
 
-    private void DeActiveSystem()
+    private void DeActivateSystem()
     {
-        _active = false;
+        ApplicationStore.IsEnabled = false;
     }
 
     private async Task RetryHealthCheckAsync(string url, HealthCheckInfoDTO healthCheckInfo)
@@ -85,56 +120,42 @@ public class HealthChecker : BackgroundService
         {
             await Task.Delay(10000);
 
-            var response = await SendHealthCheckAsync(url, healthCheckInfo);
-            if (!response.IsSuccessStatusCode) continue;
+            try
+            {
+                var response = await SendHealthCheckAsync(url, healthCheckInfo);
+                if (!response.IsSuccessStatusCode) continue;
 
-            var managementResponse = await response.Content.ReadFromJsonAsync<ManagementResponseDTO>();
-            if (managementResponse == null) continue;
+                var managementResponse = await response.Content.ReadFromJsonAsync<ManagementResponseDTO>();
+                if (managementResponse == null) continue;
 
-            HandleManagementResponse(managementResponse);
-            return;
+                HandleManagementResponse(managementResponse);
+                return;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Failed to execute HealthChecker with exception message: {ex.Message}", ex.Message);
+            }
         }
 
         // Disable the service
         _logger.LogError("Failed to execute HealthChecker after 5 retries.");
-        DeActiveSystem();
+        _logger.LogError("Health Checker is disabling system...");
+        DeActivateSystem();
     }
 
     private void HandleManagementResponse(ManagementResponseDTO response)
     {
         if (!response.IsEnabled)
         {
-            // Disable message processing
-            _logger.LogInformation("Disabling message processing as per management response.");
-            DeActiveSystem();
-
+            // Disable message splitting
+            _logger.LogCritical("Health Checker is disabling system...");
         }
 
-        if (response.ExpirationTime < DateTime.UtcNow)
-        {
-            // Expiration time has passed, disable the service
-            _logger.LogInformation("Service has expired as per management response.");
-            DeActiveSystem();
+        ApplicationStore.IsEnabled = response.IsEnabled;
+        ApplicationStore.ExpirationTime = response.ExpirationTime;
+        ApplicationStore.NumberOfMaximumActiveClients = response.NumberOfActiveClients;
 
-        }
-
-        // Handle other fields as necessary
-
-        _logger.LogInformation("Health Checker has been executed...");
+        _logger.LogInformation("Health Checker has been executed successfully...");
     }
 
-    private static Guid GenerateGuid()
-    {
-        var macAddress = GetMacAddress()!;
-        var hash = MD5.HashData(Encoding.UTF8.GetBytes(macAddress));
-        return new Guid(hash);
-    }
-    private static string? GetMacAddress()
-    {
-        return NetworkInterface
-            .GetAllNetworkInterfaces()
-            .Where(nic => nic.OperationalStatus == OperationalStatus.Up && nic.NetworkInterfaceType != NetworkInterfaceType.Loopback)
-            .Select(nic => nic.GetPhysicalAddress().ToString())
-            .FirstOrDefault();
-    }
 }

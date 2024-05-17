@@ -2,6 +2,7 @@
 using Grpc.Net.Client;
 using GrpcMessage;
 using Message.Processor.Persistence.Interfaces;
+using Message.Splitter.Store;
 using Microsoft.Extensions.Logging;
 
 namespace Message.Splitter.Services
@@ -26,8 +27,46 @@ namespace Message.Splitter.Services
             //this will read incoming requests from a call until its marked as completed 
             await foreach (var request in requestStream.ReadAllAsync())
             {
+                //checks for application's status
+                if (!ApplicationStore.IsEnabled || ApplicationStore.ExpirationTime < DateTime.Now)
+                {
+                    //send error for calling service
+                    _logger.LogWarning("Application is not enabled. Skipping request ID: {request.Id}", request.Id);
+                    throw new RpcException(new Status(StatusCode.PermissionDenied, "Application is not enabled."));
+                }
+
                 try
                 {
+
+                    #region Register or check a processor
+
+                    if (ApplicationStore.ProcessClientsList.All(p => p.Id != request.Id))
+                    {
+                        ApplicationStore.ProcessClientsList.Add(new ProcessClients
+                        {
+                            Id = request.Id,
+                            Type = request.Type,
+                            LastTransactionTime = DateTime.Now,
+                            IsEnabled = false
+                        });
+                        continue;
+                    }
+
+                    var storeProcess = ApplicationStore.ProcessClientsList.FirstOrDefault(p => p.Id == request.Id)!;
+
+                    if (!storeProcess.IsEnabled && ApplicationStore.ProcessClientsList.Count(p => p.IsEnabled && DateTime.Now <= p.LastTransactionTime.AddMinutes(5)) < ApplicationStore.NumberOfMaximumActiveClients)
+                    {
+                        storeProcess.IsEnabled = true;
+                    }
+
+                    if (!storeProcess.IsEnabled)
+                    {
+                        continue;
+                    }
+
+
+                    #endregion
+
                     _logger.LogInformation("Message Splitter: Received message request with ID: {request.Id}", request.Id);
                     var message = await _messageService.GetMessageFromQueue();
 

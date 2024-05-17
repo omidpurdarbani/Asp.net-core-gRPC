@@ -38,21 +38,30 @@ namespace Message.Processor.Services
                 //log responses when received
                 _ = Task.Run(async () =>
                 {
-                    try
+                    while (true)
                     {
-                        //this will run until the request is closed by RequestMessage on message.splitter
-                        await foreach (var response in responseStream.ReadAllAsync())
+                        try
                         {
-                            _logger.LogInformation("Message Processor[{instanceId}]: Received response: {response.Id}, {response.Engine}, {response.MessageLength}, {response.IsValid}, {response.AdditionalFields.Count}", instanceId, response.Id, response.Engine, response.MessageLength, response.IsValid, response.AdditionalFields);
+                            //this will run until the request is closed by RequestMessage on message.splitter
+                            await foreach (var response in responseStream.ReadAllAsync())
+                            {
+                                _logger.LogInformation("Message Processor[{instanceId}]: Received response: {response.Id}, {response.Engine}, {response.MessageLength}, {response.IsValid}, {response.AdditionalFields.Count}", instanceId, response.Id, response.Engine, response.MessageLength, response.IsValid, response.AdditionalFields);
+                            }
                         }
-                    }
-                    catch (RpcException ex)
-                    {
-                        _logger.LogError("Receiving response RPC Error: {ex.Status}, {ex.Message}", ex.Status, ex.Message);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError("Receiving response Error: {ex.Message}", ex.Message);
+                        catch (RpcException ex)
+                        {
+                            if (ex.StatusCode == StatusCode.PermissionDenied)
+                            {
+                                _logger.LogError("Receiving response RPC Error: {ex.Status}, {ex.Message}", ex.Status, ex.Message);
+                                break;
+                            }
+
+                            _logger.LogError("Receiving response RPC Error: {ex.Status}, {ex.Message}", ex.Status, ex.Message);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError("Receiving response Error: {ex.Message}", ex.Message);
+                        }
                     }
                 });
 
@@ -62,7 +71,7 @@ namespace Message.Processor.Services
 
                 #region Initial Request
 
-                var request = _messageService.InitialRequest(instanceId);
+                var request = await _messageService.InitialRequest(instanceId);
 
                 await requestStream.WriteAsync(request);
                 _logger.LogInformation("Message Processor[{instanceId}]: Initial request", instanceId);
@@ -86,6 +95,12 @@ namespace Message.Processor.Services
                     }
                     catch (RpcException ex)
                     {
+                        if (ex.StatusCode == StatusCode.PermissionDenied)
+                        {
+                            _logger.LogError("Receiving response RPC Error: {ex.Status}, {ex.Message}", ex.Status, ex.Message);
+                            break;
+                        }
+
                         _logger.LogError("Requesting message RPC Error: {ex.Status}, {ex.Message}", ex.Status,
                             ex.Message);
                     }
