@@ -9,13 +9,13 @@ namespace Message.Processor
     public class Processor
     {
         private readonly ILogger<Processor> _logger;
-        private readonly IMessageService _messageService;
+        private readonly IProcessorService _processorService;
         private readonly MessageSplitter.MessageSplitterClient _client;
 
-        public Processor(ILogger<Processor> logger, IMessageService messageService)
+        public Processor(ILogger<Processor> logger, IProcessorService processorService)
         {
             _logger = logger;
-            _messageService = messageService;
+            _processorService = processorService;
 
             var channel = GrpcChannel.ForAddress("http://localhost:6001");
             _client = new MessageSplitter.MessageSplitterClient(channel);
@@ -61,7 +61,7 @@ namespace Message.Processor
 
                     if (firstTime)
                     {
-                        var request = await _messageService.InitialRequest(instanceId).ConfigureAwait(false);
+                        var request = await _processorService.InitialRequest(instanceId).ConfigureAwait(false);
 
                         await requestStream.WriteAsync(request);
                         _logger.LogInformation("Message Processor[{instanceId}]: Initial request", instanceId);
@@ -73,7 +73,7 @@ namespace Message.Processor
                     {
                         try
                         {
-                            var newRequest = await _messageService.RequestMessage(instanceId).ConfigureAwait(false);
+                            var newRequest = await _processorService.RequestMessage(instanceId).ConfigureAwait(false);
 
                             await requestStream.WriteAsync(newRequest).ConfigureAwait(false);
 

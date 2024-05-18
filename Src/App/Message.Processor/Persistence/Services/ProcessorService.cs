@@ -5,12 +5,12 @@ using Microsoft.Extensions.Logging;
 
 namespace Message.Processor.Persistence.Services
 {
-    public class MessageService : IMessageService
+    public class ProcessorService : IProcessorService
     {
-        private readonly ILogger<MessageService> _logger;
+        private readonly ILogger<ProcessorService> _logger;
         private readonly Random _random;
 
-        public MessageService(ILogger<MessageService> logger)
+        public ProcessorService(ILogger<ProcessorService> logger)
         {
             _logger = logger;
             _random = new Random();

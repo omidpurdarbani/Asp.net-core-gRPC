@@ -34,7 +34,7 @@ namespace Message.Processor.Services
                     services.AddGrpc();
                     services.AddSingleton(processingService);
                     services.AddSingleton(grpcProcessingService);
-                    services.AddSingleton<IMessageService, MessageService>();
+                    services.AddSingleton<IProcessorService, ProcessorService>();
                 })
                 .Configure(app =>
                 {

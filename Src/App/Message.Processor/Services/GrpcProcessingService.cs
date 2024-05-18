@@ -7,12 +7,12 @@ namespace Message.Processor.Services
 {
     public class GrpcProcessingService : MessageProcessor.MessageProcessorBase
     {
-        private readonly IMessageService _messageService;
+        private readonly IProcessorService _processorService;
         private readonly ILogger<GrpcProcessingService> _logger;
 
-        public GrpcProcessingService(IMessageService messageService, ILogger<GrpcProcessingService> logger)
+        public GrpcProcessingService(IProcessorService processorService, ILogger<GrpcProcessingService> logger)
         {
-            _messageService = messageService;
+            _processorService = processorService;
             _logger = logger;
         }
 
@@ -23,7 +23,7 @@ namespace Message.Processor.Services
             {
                 try
                 {
-                    var res = _messageService.ProcessMessage(request);
+                    var res = _processorService.ProcessMessage(request);
                     await responseStream.WriteAsync(res).ConfigureAwait(false);
                 }
                 catch (Exception ex)

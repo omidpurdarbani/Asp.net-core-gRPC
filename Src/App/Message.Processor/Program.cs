@@ -16,7 +16,7 @@ namespace Message.Processor
                     services.AddHostedService<Worker>();
                     services.AddSingleton<Processor>();
                     services.AddSingleton<GrpcProcessingService>();
-                    services.AddSingleton<IMessageService, MessageService>();
+                    services.AddSingleton<IProcessorService, ProcessorService>();
                 })
                 .Build();
 

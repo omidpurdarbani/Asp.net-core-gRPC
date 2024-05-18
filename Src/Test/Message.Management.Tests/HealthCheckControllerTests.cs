@@ -5,14 +5,14 @@ using ManagementSystem.Persistence.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 
-namespace Message.Tests
+namespace Message.Management.Tests
 {
-    public class MessageManagementTests
+    public class HealthCheckControllerTests
     {
         private readonly Mock<IHealthCheckService> _mockHealthCheckService;
         private readonly HealthCheckController _controller;
 
-        public MessageManagementTests()
+        public HealthCheckControllerTests()
         {
             _mockHealthCheckService = new Mock<IHealthCheckService>();
             _controller = new HealthCheckController(_mockHealthCheckService.Object);
