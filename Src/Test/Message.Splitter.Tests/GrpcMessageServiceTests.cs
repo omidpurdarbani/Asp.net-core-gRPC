@@ -27,6 +27,8 @@ public class GrpcMessageServiceTests
 
         var messageRequest = new MessageRequest { Id = "test" };
         requestStreamMock.Setup(r => r.Current).Returns(messageRequest);
+        messageServiceMock.Setup(r => r.IsApplicationEnabled()).Returns(true);
+        messageServiceMock.Setup(r => r.IsClientEnabled(It.IsAny<string>())).Returns(true); messageServiceMock.Setup(r => r.ProcessClient(It.IsAny<MessageRequest>())).Returns(false);
 
         // Act
         await grpcService.RequestMessage(requestStreamMock.Object, responseStreamMock.Object, serverCallContextMock.Object);

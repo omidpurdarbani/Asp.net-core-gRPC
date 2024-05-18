@@ -1,4 +1,5 @@
-﻿using Message.Splitter.Services;
+﻿using Message.Processor.Persistence.Interfaces;
+using Message.Splitter.Services;
 using Microsoft.Extensions.Logging;
 using Moq;
 
@@ -11,8 +12,10 @@ public class WorkerTests
     {
         // Arrange
         var loggerMock = new Mock<ILogger<Worker>>();
-        var grpcServiceMock = new Mock<GrpcMessageService>(null, loggerMock.Object);
-        var worker = new Worker(grpcServiceMock.Object, loggerMock.Object);
+        var grpcLoggerMock = new Mock<ILogger<GrpcMessageService>>();
+        var message = new Mock<IMessageService>();
+        var grpcServiceMock = new GrpcMessageService(message.Object, grpcLoggerMock.Object);
+        var worker = new Worker(grpcServiceMock, loggerMock.Object);
 
         // Act
         var cancellationTokenSource = new CancellationTokenSource();
@@ -20,7 +23,7 @@ public class WorkerTests
 
         // Assert
         Assert.NotNull(executeTask);
-        cancellationTokenSource.Cancel();
+        await cancellationTokenSource.CancelAsync();
         await executeTask;
     }
 }
