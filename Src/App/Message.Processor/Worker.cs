@@ -58,7 +58,9 @@ namespace Message.Processor.Services
             var numberOfInstances = int.Parse(_configuration["NumberOfInstances"] ?? "1");
             for (var i = 0; i < numberOfInstances; i++)
             {
-                listOfTasks.Add(Task.Run(async () => await _processingService.StartTask(Tools.GenerateGuid().ToString()), stoppingToken));
+                var id = Tools.GenerateGuid().ToString();
+                _logger.LogInformation("Creating Message Processor[{instanceId}]", id);
+                listOfTasks.Add(Task.Run(async () => await _processingService.StartTask(id), stoppingToken));
             }
 
             //ensure all tasks are running

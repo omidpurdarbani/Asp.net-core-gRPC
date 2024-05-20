@@ -31,7 +31,7 @@ namespace Message.Splitter.Tests
         public async Task HealthChecker_Sends_Initial_HealthCheckCorrectly()
         {
             // Arrange
-            _configurationMock.Setup(c => c["ManagementUrl"]).Returns("https://localhost:7265/api/module/health");
+            _configurationMock.Setup(c => c["ManagementUrl"]).Returns("https://localhost");
 
             var responseContent = new ManagementResponseDTO
             {

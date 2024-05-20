@@ -18,7 +18,7 @@ namespace Message.Processor.Persistence.Services
 
         public async Task<MessageRequest> InitialRequest(string instanceId)
         {
-            var wait = _random.Next(200, 10000);
+            var wait = _random.Next(200, 2000);
             await Task.Delay(wait).ConfigureAwait(false);
             var initConnection = new MessageRequest
             {

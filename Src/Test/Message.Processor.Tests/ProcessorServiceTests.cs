@@ -1,4 +1,5 @@
-﻿using GrpcMessage;
+﻿using FluentAssertions;
+using GrpcMessage;
 using Message.Processor.Persistence.Services;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -22,13 +23,15 @@ namespace Message.Processor.Tests
             // Arrange
             var instanceId = "test-instance";
 
+
             // Act
             var result = await _messageService.InitialRequest(instanceId);
 
+
             // Assert
-            Assert.NotNull(result);
-            Assert.Equal(instanceId, result.Id);
-            Assert.Equal("RegexEngine", result.Type);
+            result.Should().NotBeNull();
+            result.Id.Should().Be(instanceId);
+            result.Type.Should().Be("RegexEngine");
         }
 
         [Fact]
@@ -41,27 +44,39 @@ namespace Message.Processor.Tests
             var result = await _messageService.RequestMessage(instanceId);
 
             // Assert
-            Assert.NotNull(result);
-            Assert.Equal(instanceId, result.Id);
-            Assert.Equal("RegexEngine", result.Type);
+            result.Should().NotBeNull();
+            result.Id.Should().Be(instanceId);
+            result.Type.Should().Be("RegexEngine");
         }
 
         [Fact]
         public void ProcessMessage_ReturnsCorrectProcessResponse()
         {
             // Arrange
-            var request = new MessageQueueRequest { Id = "test-id", Message = "test-message", AdditionalFields = { { "key", "value" } } };
+            var request = new MessageQueueRequest
+            {
+                Id = "test-id",
+                Message = "test-message",
+                AdditionalFields =
+                {
+                    { "HasNumbers", @"\d" },
+                    { "HasLetters", @"[a-zA-Z]" }
+                }
+            };
+
 
             // Act
             var result = _messageService.ProcessMessage(request);
 
+
             // Assert
-            Assert.NotNull(result);
-            Assert.Equal("test-id", result.Id);
-            Assert.Equal("RegexEngine", result.Engine);
-            Assert.Equal(12, result.MessageLength);
-            Assert.True(result.IsValid);
-            Assert.Single(result.AdditionalFields);
+            result.Should().NotBeNull();
+            result.Id.Should().Be("test-id");
+            result.Engine.Should().Be("RegexEngine");
+            result.MessageLength.Should().Be(12);
+            result.IsValid.Should().BeTrue();
+            result.AdditionalFields.First().Value.Should().BeFalse();
+            result.AdditionalFields.Last().Value.Should().BeTrue();
         }
     }
 }
