@@ -1,31 +1,54 @@
-﻿using Message.Processor.Services;
+﻿using FluentAssertions;
+using Message.Processor.Services;
 using Message.Splitter.Store;
 using Microsoft.Extensions.Logging;
 using Moq;
 
-namespace Message.Splitter.Tests;
-
-public class ClientCheckerTests
+namespace Message.Splitter.Tests
 {
-    [Fact]
-    public async Task ClientChecker_DisablesInactiveClients()
+    public class ClientCheckerTests
     {
-        // Arrange
-        var loggerMock = new Mock<ILogger<ClientChecker>>();
-        var clientChecker = new ClientChecker(loggerMock.Object);
-        ApplicationStore.ProcessClientsList.Add(new ProcessClients
+        private readonly Mock<ILogger<ClientChecker>> _loggerMock;
+        private readonly ClientChecker _clientChecker;
+
+        public ClientCheckerTests()
         {
-            Id = "client1",
-            IsEnabled = true,
-            LastTransactionTime = DateTime.Now.AddMinutes(-10)
-        });
+            _loggerMock = new Mock<ILogger<ClientChecker>>();
+            _clientChecker = new ClientChecker(_loggerMock.Object, 2);
+        }
 
-        // Act
-        var cancellationTokenSource = new CancellationTokenSource();
-        await clientChecker.StartAsync(cancellationTokenSource.Token);
+        [Fact]
+        public async Task ClientChecker_Disables_Inactive_Users_Correctly()
+        {
+            // Arrange
+            ApplicationStore.ProcessClientsList.Add(new ProcessClients
+            {
+                Id = "client1",
+                IsEnabled = true,
+                LastTransactionTime = DateTime.Now.AddMinutes(-10)
+            });
 
-        // Assert
-        await Task.Delay(65000, cancellationTokenSource.Token);
-        Assert.False(ApplicationStore.ProcessClientsList[0].IsEnabled);
+
+            // Act
+            var cancellationTokenSource = new CancellationTokenSource();
+            await _clientChecker.StartAsync(cancellationTokenSource.Token);
+            await Task.Delay(2500);
+
+
+            // Assert
+            ApplicationStore.ProcessClientsList[0].IsEnabled.Should().BeFalse();
+
+            _loggerMock.Verify(
+                x => x.Log(
+                    It.Is<LogLevel>(l => l == LogLevel.Information),
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Disabled client with id: client1")),
+                    It.IsAny<Exception>(),
+                    It.Is<Func<It.IsAnyType, Exception, string>>((v, t) => true)!
+                ),
+                Times.Once
+            );
+        }
     }
+
 }

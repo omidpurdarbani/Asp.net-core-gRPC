@@ -1,5 +1,4 @@
 ﻿using Grpc.Core;
-using Grpc.Net.Client;
 using GrpcMessage;
 using Message.Processor.Persistence.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -10,13 +9,11 @@ namespace Message.Splitter.Services
     {
         private readonly IMessageService _messageService;
         private readonly ILogger<GrpcMessageService> _logger;
-        private readonly GrpcChannel _channel;
 
         public GrpcMessageService(IMessageService messageService, ILogger<GrpcMessageService> logger)
         {
             _messageService = messageService;
             _logger = logger;
-
         }
 
         public override async Task RequestMessage(IAsyncStreamReader<MessageRequest> requestStream, IServerStreamWriter<MessageResponse> responseStream, ServerCallContext context)

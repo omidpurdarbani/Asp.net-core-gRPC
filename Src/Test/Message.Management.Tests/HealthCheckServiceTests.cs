@@ -19,8 +19,10 @@ namespace Message.Management.Tests
             // Arrange
             var request = new HealthCheckRequest();
 
+
             // Act
             var result = _checkService.CheckHealth(request);
+
 
             // Assert
             result.Should().NotBeNull();

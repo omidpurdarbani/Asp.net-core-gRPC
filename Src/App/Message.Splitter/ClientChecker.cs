@@ -10,22 +10,23 @@ public class ClientChecker : BackgroundService
     private readonly int _period;
     private bool _active => ApplicationStore.IsEnabled;
 
-    public ClientChecker(ILogger<ClientChecker> logger)
+    public ClientChecker(ILogger<ClientChecker> logger, int period = 60)
     {
         _logger = logger;
-        _period = 1;
+        _period = period;
     }
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _logger.LogInformation("Client Checker has started...");
         #region Priodic Request
 
-        using PeriodicTimer timer = new(TimeSpan.FromMinutes(_period));
+        using PeriodicTimer timer = new(TimeSpan.FromSeconds(_period));
 
         while (_active && !stoppingToken.IsCancellationRequested && await timer.WaitForNextTickAsync(stoppingToken))
         {
             foreach (var clients in ApplicationStore.ProcessClientsList.Where(p => p.IsEnabled && p.LastTransactionTime.AddMinutes(5) <= DateTime.Now))
             {
+                _logger.LogInformation("Disabled client with id: {Id}", clients.Id);
                 clients.IsEnabled = false;
             }
         }

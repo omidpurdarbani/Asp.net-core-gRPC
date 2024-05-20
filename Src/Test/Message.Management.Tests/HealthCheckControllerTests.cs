@@ -32,8 +32,10 @@ namespace Message.Management.Tests
 
             _mockHealthCheckService.Setup(service => service.CheckHealth(request)).Returns(expectedResponse);
 
+
             // Act
             var result = _controller.HealthCheck(request);
+
 
             // Assert
             var okResult = result.Result as OkObjectResult;
@@ -47,8 +49,10 @@ namespace Message.Management.Tests
             // Arrange
             var request = new HealthCheckRequest();
 
+
             // Act
             var result = _controller.HealthCheck(request);
+
 
             // Assert
             _mockHealthCheckService.Verify(service => service.CheckHealth(request), Times.Once);

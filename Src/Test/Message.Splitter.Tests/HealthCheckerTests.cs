@@ -53,9 +53,11 @@ namespace Message.Splitter.Tests
                     Content = new StringContent(jsonResponse)
                 });
 
+
             // Act
             var cancellationTokenSource = new CancellationTokenSource();
             await _healthChecker.StartAsync(cancellationTokenSource.Token);
+
 
             // Assert
             _loggerMock.Verify(
@@ -106,12 +108,13 @@ namespace Message.Splitter.Tests
                     Content = new StringContent(jsonResponse)
                 });
 
+
             // Act
             var cancellationTokenSource = new CancellationTokenSource();
             await _healthChecker.StartAsync(cancellationTokenSource.Token);
 
-            // Assert
 
+            // Assert
             _loggerMock.Verify(
                 x => x.Log(
                     It.Is<LogLevel>(l => l == LogLevel.Critical),
