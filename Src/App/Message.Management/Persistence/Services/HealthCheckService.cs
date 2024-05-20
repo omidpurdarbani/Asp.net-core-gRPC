@@ -17,7 +17,7 @@ namespace ManagementSystem.Persistence.Services
             return new HealthCheckResponse
             {
                 IsEnabled = true,
-                NumberOfActiveClients = _random.Next(1, 20),
+                NumberOfActiveClients = _random.Next(0, 5),
                 ExpirationTime = DateTime.Now.AddMinutes(10)
             };
         }

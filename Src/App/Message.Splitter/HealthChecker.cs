@@ -1,10 +1,13 @@
 ﻿using System.Net.Http.Json;
+using System.Runtime.CompilerServices;
 using Message.Splitter.Helper;
 using Message.Splitter.Models;
 using Message.Splitter.Store;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+
+[assembly: InternalsVisibleTo("Message.Splitter.Tests")]
 
 namespace Message.Processor.Services;
 
