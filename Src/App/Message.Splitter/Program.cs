@@ -1,4 +1,5 @@
-﻿using Message.Processor.Persistence.Interfaces;
+﻿using GrpcMessage;
+using Message.Processor.Persistence.Interfaces;
 using Message.Processor.Persistence.Services;
 using Message.Processor.Services;
 using Message.Splitter.Services;
@@ -14,12 +15,16 @@ namespace Message.Splitter
             var host = Host.CreateDefaultBuilder(args)
                 .ConfigureServices((_, services) =>
                 {
+                    services.AddGrpcClient<MessageProcessor.MessageProcessorClient>(o =>
+                    {
+                        o.Address = new Uri("http://localhost:5001");
+                    });
                     services.AddHostedService<HealthChecker>();
                     services.AddHostedService<Worker>();
                     services.AddHostedService<ClientChecker>();
                     services.AddSingleton<GrpcMessageService>();
-                    services.AddHttpClient();
                     services.AddSingleton<IMessageService, MessageService>();
+                    services.AddHttpClient();
                 })
                 .Build();
 

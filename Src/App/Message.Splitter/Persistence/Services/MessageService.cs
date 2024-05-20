@@ -1,5 +1,4 @@
 ﻿using Grpc.Core;
-using Grpc.Net.Client;
 using GrpcMessage;
 using Message.Processor.Persistence.Interfaces;
 using Message.Splitter.Helper;
@@ -15,14 +14,13 @@ namespace Message.Processor.Persistence.Services
         private readonly ILogger<MessageService> _logger;
 
 
-        public MessageService(ILogger<MessageService> logger)
+        public MessageService(ILogger<MessageService> logger, MessageProcessor.MessageProcessorClient client)
         {
             _tools = new Tools();
             _logger = logger;
-
-            var channel = GrpcChannel.ForAddress("http://localhost:5001");
-            _client = new MessageProcessor.MessageProcessorClient(channel);
+            _client = client;
         }
+
         public async Task<MessageQueueRequest> GetMessageFromQueue()
         {
             await Task.Delay(200);

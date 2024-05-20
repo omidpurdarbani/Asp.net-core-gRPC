@@ -1,6 +1,4 @@
-﻿using Message.Processor.Persistence.Interfaces;
-using Message.Processor.Persistence.Services;
-using Message.Splitter.Helper;
+﻿using Message.Splitter.Helper;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
@@ -32,9 +30,7 @@ namespace Message.Processor.Services
                 .ConfigureServices(services =>
                 {
                     services.AddGrpc();
-                    services.AddSingleton(processingService);
                     services.AddSingleton(grpcProcessingService);
-                    services.AddSingleton<IProcessorService, ProcessorService>();
                 })
                 .Configure(app =>
                 {

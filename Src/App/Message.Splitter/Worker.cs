@@ -1,6 +1,4 @@
-﻿using Message.Processor.Persistence.Interfaces;
-using Message.Processor.Persistence.Services;
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,7 +24,6 @@ namespace Message.Splitter.Services
                 {
                     services.AddGrpc();
                     services.AddSingleton(grpcMessageService);
-                    services.AddSingleton<IMessageService, MessageService>();
                 })
                 .Configure(app =>
                 {

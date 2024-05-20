@@ -15,12 +15,12 @@ namespace Message.Splitter.Helper
 
         public (string Id, string Sender, string Message) GenerateRandomMessage()
         {
-            return (Guid.NewGuid().ToString(), "Legal", LoremIpsum(10 + _random.Next(30), 41 + _random.Next(30), 1, 1, 1));
+            return (Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), LoremIpsum(10 + _random.Next(30), 41 + _random.Next(30), 1, 1, 1));
         }
 
         private string LoremIpsum(int minWords, int maxWords, int minSentences, int maxSentences, int numLines)
         {
-            var words = new[] { "lorem", "ipsum", "dolor", "sit", "48948", "amet", "consectetuer", "adipiscing", "elit", "sed", "diam", "nonummy", "nibh", "544", "euismod", "tincidunt", "ut", "laoreet", "dolore", "15646546", "magna", "aliquam", "erat" };
+            var words = new[] { "lorem", "ipsum", "dolor", "sit", "lomis", "padel", "amet", "consectetuer", "adipiscing", "elit", "sed", "diam", "nonummy", "nibh", "544", "euismod", "tincidunt", "ut", "laoreet", "dolore", "95954", "magna", "aliquam", "erat" };
 
             int numSentences = _random.Next(maxSentences - minSentences) + minSentences + 1;
             int numWords = _random.Next(maxWords - minWords) + minWords + 1;
