@@ -25,7 +25,8 @@ namespace Message.Processor.Persistence.Services
         }
         public async Task<MessageQueueRequest> GetMessageFromQueue()
         {
-            var message = await _tools.GenerateRandomMessage();
+            await Task.Delay(200);
+            var message = _tools.GenerateRandomMessage();
             return new MessageQueueRequest
             {
                 Id = message.Id,

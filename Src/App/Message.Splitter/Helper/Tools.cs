@@ -13,9 +13,8 @@ namespace Message.Splitter.Helper
             _random = new Random();
         }
 
-        public async Task<(string Id, string Sender, string Message)> GenerateRandomMessage()
+        public (string Id, string Sender, string Message) GenerateRandomMessage()
         {
-            await Task.Delay(200);
             return (Guid.NewGuid().ToString(), "Legal", LoremIpsum(10 + _random.Next(30), 41 + _random.Next(30), 1, 1, 1));
         }
 
